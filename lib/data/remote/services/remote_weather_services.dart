@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:climora/core/env/env_ci.dart';
 import 'package:climora/data/entities/weather_entities.dart';
-import 'package:climora/data/remote/configs/api_endpoints.dart';
 import 'package:climora/domain/models/weather_model.dart';
 import 'package:dartz/dartz.dart';
 import 'package:http/http.dart' as http;
@@ -29,7 +29,7 @@ class RemoteWeatherDataSourceImpl implements RemoteWeatherDataSource {
     bool alerts = false,
   }) async {
     try {
-      final uri = ApiEndpoints.forecastUri(
+      final uri = EnvConfig.forecastUri(
         query: query,
         days: days,
         aqi: aqi,

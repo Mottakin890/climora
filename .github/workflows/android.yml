@@ -49,7 +49,18 @@ jobs:
       # Dev uses hardcoded values no secrets needed
       - name: Generate config (dev)
         if: steps.env.outputs.ENV == 'dev'
-        run: ./scripts/generate_config.sh dev "https://dev.api.example.com" "dev_dummy_key"
+        run: ./scripts/generate_config.sh dev "https://dev.api.example.com" "dev_api_key" "dev_dummy_key"
+
+      # Generate .env file for the app's runtime config loading
+      - name: Generate .env file
+        run: |
+          if [ "${{ steps.env.outputs.ENV }}" = "staging" ]; then
+            echo "STAGING_BASE_URL=${{ secrets.STAGING_BASE_URL || 'https://staging.api.example.com' }}" >> .env
+            echo "STAGING_API_KEY=${{ secrets.STAGING_API_KEY || 'staging_dummy_key' }}" >> .env
+          else
+            echo "PRODUCTION_BASE_URL=${{ secrets.PROD_BASE_URL || 'https://api.example.com' }}" >> .env
+            echo "PRODUCTION_API_KEY=${{ secrets.PROD_API_KEY || 'production_dummy_api_key' }}" >> .env
+          fi
 
       # Staging and production inject real secrets
       - name: Generate config (staging/production)
@@ -58,11 +69,13 @@ jobs:
           if [ "${{ steps.env.outputs.ENV }}" = "staging" ]; then
             ./scripts/generate_config.sh staging \
               "${{ secrets.STAGING_BASE_URL }}" \
-              "${{ secrets.STAGING_API_KEY }}"
+              "${{ secrets.STAGING_API_KEY }}" \
+              "UNSET_ENCRYPTION_KEY"
           else
             ./scripts/generate_config.sh production \
               "${{ secrets.PROD_BASE_URL }}" \
-              "${{ secrets.PROD_API_KEY }}"
+              "${{ secrets.PROD_API_KEY }}" \
+              "UNSET_ENCRYPTION_KEY"
           fi
 
       # Keystore is only needed for signed builds (staging & production)
