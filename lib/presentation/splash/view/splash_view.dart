@@ -16,6 +16,7 @@ class SplashView extends StatelessWidget {
     return BlocListener<SplashBloc, SplashState>(
       listener: (context, state) {
         if (state is SplashSuccess) {
+          print("SplashView: Navigation triggered. To Home...");
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (_) => BlocProvider(
@@ -25,6 +26,15 @@ class SplashView extends StatelessWidget {
                 ),
                 child: HomeView(initialLocation: state.weather.location.name),
               ),
+            ),
+          );
+        } else if (state is SplashError) {
+          print("SplashView: Error detected: ${state.message}");
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.redAccent,
+              duration: const Duration(seconds: 5),
             ),
           );
         }

@@ -26,7 +26,9 @@ void main(List<String> args) async {
 }
 
 Future<void> _setDeployment(Deployment deployment) async {
+  print("SetDeployment: Loading .env...");
   await dotenv.load(fileName: ".env");
+  print("SetDeployment: .env loaded.");
   try {
     ApiEndpoints.baseUrl = (deployment == Deployment.production)
         ? dotenv.env['PRODUCTION_BASE_URL']!
@@ -35,12 +37,15 @@ Future<void> _setDeployment(Deployment deployment) async {
     ApiEndpoints.apiKey = (deployment == Deployment.production)
         ? dotenv.env['PRODUCTION_API_KEY']!
         : dotenv.env['STAGING_API_KEY']!;
+    print("SetDeployment: ApiEndpoints configured for Production.");
   } catch (e) {
+    print("SetDeployment Error while accessing .env: $e");
     developer.log(e.toString());
   }
 }
 
 Future<void> _init() async {
+  print("Init: Starting...");
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
@@ -51,6 +56,9 @@ Future<void> _init() async {
     systemNavigationBarContrastEnforced: false,
   ));
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  print("Init: Setting deployment...");
   await _setDeployment(Deployment.production);
+  print("Init: Initializing Dependency Injection...");
   await di.init();
+  print("Init: Finished.");
 }

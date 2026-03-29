@@ -22,12 +22,16 @@ class SplashBloc extends Bloc<SplashEvent, SplashState> {
   ) async {
     emit(const SplashLoading());
     try {
+      print("SplashStarted: Handling location...");
       final query = await _handleLocation();
+      print("SplashStarted: Location handled, query: $query. Fetching weather...");
       final weather = await _fetchWeatherForecastUseCase(
         FetchWeatherParams(query: query, days: 7),
       );
+      print("SplashStarted: Weather fetched successfully. Emitting Success.");
       emit(SplashSuccess(weather: weather));
     } catch (e) {
+      print("SplashStarted Error: $e");
       emit(SplashError(message: e.toString()));
     }
   }
@@ -53,7 +57,16 @@ class SplashBloc extends Bloc<SplashEvent, SplashState> {
       return "dhaka";
     }
 
-    final position = await Geolocator.getCurrentPosition();
-    return "${position.latitude},${position.longitude}";
+    print("HandleLocation: Getting current position...");
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        timeLimit: const Duration(seconds: 15), // Safety timeout
+      );
+      print("HandleLocation: Got position: $position");
+      return "${position.latitude},${position.longitude}";
+    } catch (e) {
+      print("HandleLocation Exception: $e. Falling back to dhaka.");
+      return "dhaka";
+    }
   }
 }

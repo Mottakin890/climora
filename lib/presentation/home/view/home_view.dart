@@ -13,6 +13,7 @@ class HomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print("HomeView: Building. Initial state should be WeatherLoaded.");
     return Scaffold(
       extendBodyBehindAppBar: true,
       body: Stack(
