@@ -1,6 +1,6 @@
+import 'dart:developer' as dev;
 import 'package:climora/common/resources/app_assets.dart';
 import 'package:climora/common/constants/app_colors.dart';
-import 'package:climora/common/di/injection.dart';
 import 'package:climora/presentation/home/bloc/weather_bloc.dart';
 import 'package:climora/presentation/home/view/home_view.dart';
 import 'package:climora/presentation/splash/bloc/splash_bloc.dart';
@@ -16,20 +16,19 @@ class SplashView extends StatelessWidget {
     return BlocListener<SplashBloc, SplashState>(
       listener: (context, state) {
         if (state is SplashSuccess) {
-          print("SplashView: Navigation triggered. To Home...");
+          dev.log("SplashView: Navigation triggered. To Home...",
+              name: 'SplashView');
+          context
+              .read<WeatherBloc>()
+              .add(WeatherInitialSet(weather: state.weather));
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
-              builder: (_) => BlocProvider(
-                create: (_) => WeatherBloc(
-                  fetchWeatherForecastUseCase: sl(),
-                  initialWeather: state.weather,
-                ),
-                child: HomeView(initialLocation: state.weather.location.name),
-              ),
+              builder: (_) =>
+                  HomeView(initialLocation: state.weather.location.name),
             ),
           );
         } else if (state is SplashError) {
-          print("SplashView: Error detected: ${state.message}");
+          dev.log("SplashView: Error detected: ${state.message}", name: 'SplashView');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.message),

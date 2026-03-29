@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'package:climora/domain/models/weather_model.dart';
 import 'package:climora/domain/usecases/fetch_weather_forecast_usecase.dart';
 import 'package:equatable/equatable.dart';
@@ -22,16 +23,16 @@ class SplashBloc extends Bloc<SplashEvent, SplashState> {
   ) async {
     emit(const SplashLoading());
     try {
-      print("SplashStarted: Handling location...");
+      dev.log("SplashStarted: Handling location...", name: 'SplashBloc');
       final query = await _handleLocation();
-      print("SplashStarted: Location handled, query: $query. Fetching weather...");
+      dev.log("SplashStarted: Location handled, query: $query. Fetching weather...", name: 'SplashBloc');
       final weather = await _fetchWeatherForecastUseCase(
         FetchWeatherParams(query: query, days: 7),
       );
-      print("SplashStarted: Weather fetched successfully. Emitting Success.");
+      dev.log("SplashStarted: Weather fetched successfully. Emitting Success.", name: 'SplashBloc');
       emit(SplashSuccess(weather: weather));
     } catch (e) {
-      print("SplashStarted Error: $e");
+      dev.log("SplashStarted Error: $e", name: 'SplashBloc', error: e);
       emit(SplashError(message: e.toString()));
     }
   }
@@ -57,15 +58,18 @@ class SplashBloc extends Bloc<SplashEvent, SplashState> {
       return "dhaka";
     }
 
-    print("HandleLocation: Getting current position...");
+    dev.log("HandleLocation: Getting current position...", name: 'SplashBloc');
     try {
       final position = await Geolocator.getCurrentPosition(
-        timeLimit: const Duration(seconds: 15), // Safety timeout
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 15),
+        ),
       );
-      print("HandleLocation: Got position: $position");
+      dev.log("HandleLocation: Got position: $position", name: 'SplashBloc');
       return "${position.latitude},${position.longitude}";
     } catch (e) {
-      print("HandleLocation Exception: $e. Falling back to dhaka.");
+      dev.log("HandleLocation Exception: $e. Falling back to dhaka.", name: 'SplashBloc', error: e);
       return "dhaka";
     }
   }

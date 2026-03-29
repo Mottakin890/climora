@@ -21,3 +21,9 @@ final class WeatherSearchQueryChanged extends WeatherEvent {
 
   const WeatherSearchQueryChanged({required this.query});
 }
+
+final class WeatherInitialSet extends WeatherEvent {
+  final WeatherModel weather;
+
+  const WeatherInitialSet({required this.weather});
+}

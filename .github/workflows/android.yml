@@ -1,0 +1,121 @@
+name: Android Build & Release
+on:
+  push:
+    branches:
+      - develop
+      - staging
+      - production
+      - main
+      - master
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    env:
+      FLUTTER_VERSION: 'stable'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Determine environment
+        id: env
+        run: |
+          BRANCH=$(echo ${GITHUB_REF#refs/heads/})
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+          if [ "$BRANCH" = "develop" ]; then
+            echo "ENV=dev" >> $GITHUB_OUTPUT
+          elif [ "$BRANCH" = "staging" ]; then
+            echo "ENV=staging" >> $GITHUB_OUTPUT
+          elif [[ "$BRANCH" == "production" || "$BRANCH" == "main" || "$BRANCH" == "master" ]]; then
+            echo "ENV=production" >> $GITHUB_OUTPUT
+          else
+            echo "ENV=dev" >> $GITHUB_OUTPUT
+          fi
+
+      # Dev uses hardcoded values no secrets needed
+      - name: Generate config (dev)
+        if: steps.env.outputs.ENV == 'dev'
+        run: ./scripts/generate_config.sh dev "https://dev.api.example.com" "dev_dummy_key"
+
+      # Staging and production inject real secrets
+      - name: Generate config (staging/production)
+        if: steps.env.outputs.ENV != 'dev'
+        run: |
+          if [ "${{ steps.env.outputs.ENV }}" = "staging" ]; then
+            ./scripts/generate_config.sh staging \
+              "${{ secrets.STAGING_BASE_URL }}" \
+              "${{ secrets.STAGING_API_KEY }}"
+          else
+            ./scripts/generate_config.sh production \
+              "${{ secrets.PROD_BASE_URL }}" \
+              "${{ secrets.PROD_API_KEY }}"
+          fi
+
+      # Keystore is only needed for signed builds (staging & production)
+      - name: Restore Keystore
+        if: steps.env.outputs.ENV != 'dev'
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+
+      # Production builds are obfuscated + split debug info for Play Store
+      - name: Build artifact
+        run: |
+          if [ "${{ steps.env.outputs.ENV }}" = "production" ]; then
+            flutter build appbundle --release \
+              --obfuscate \
+              --split-debug-info=build/symbols
+          else
+            flutter build appbundle --release
+          fi
+
+      # Dev and staging go to GitHub Artifacts for internal testing
+      - name: Upload Artifacts (dev/staging)
+        if: steps.env.outputs.ENV == 'dev' || steps.env.outputs.ENV == 'staging'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.env.outputs.ENV }}-build
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 7
+
+      # Only production goes to the Play Store
+      - name: Upload to Play Store
+        if: steps.env.outputs.ENV == 'production'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.mottakin.climora.climora
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: production
+
+      - name: Notify Team (Success)
+        if: success()
+        run: |
+          echo "Android Build & Release PASSED"
+          echo "Environment: ${{ steps.env.outputs.ENV }}"
+          echo "Branch: ${{ steps.env.outputs.branch }}"
+          echo "By: @${{ github.actor }}"
+          echo "Commit: ${{ github.sha }}"
+
+      - name: Notify Team (Failure)
+        if: failure()
+        run: |
+          echo "Android Build & Release FAILED"
+          echo "Environment: ${{ steps.env.outputs.ENV }}"
+          echo "Branch: ${{ steps.env.outputs.branch }}"
+          echo "By: @${{ github.actor }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Check the logs and fix the issue before retrying"

@@ -1,0 +1,47 @@
+name: PR Quality Gate
+on:
+  pull_request:
+    branches: [ develop, main, master ]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  pr-checks:
+    name: Run quality checks on this pull request
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run quality checks
+        run: ./scripts/quality_checks.sh
+
+      - name: Notify Team (Success)
+        if: success()
+        run: |
+          echo "PR Quality Checks PASSED"
+          echo "PR: ${{ github.event.pull_request.html_url }}"
+          echo "Branch: ${{ github.head_ref }} → ${{ github.base_ref }}"
+          echo "By: @${{ github.actor }}"
+
+      - name: Notify Team (Failure)
+        if: failure()
+        run: |
+          echo "PR Quality Checks FAILED"
+          echo "PR: ${{ github.event.pull_request.html_url }}"
+          echo "Branch: ${{ github.head_ref }} → ${{ github.base_ref }}"
+          echo "By: @${{ github.actor }}"
+          echo "Please fix the issues before requesting review 🔧"

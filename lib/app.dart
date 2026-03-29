@@ -1,4 +1,5 @@
 import 'package:climora/common/di/injection.dart';
+import 'package:climora/presentation/home/bloc/weather_bloc.dart';
 import 'package:climora/presentation/splash/bloc/splash_bloc.dart';
 import 'package:climora/presentation/splash/view/splash_view.dart';
 import 'package:flutter/material.dart';
@@ -10,21 +11,27 @@ class Climora extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0A0E21), // AppColors.deepNavy
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          systemOverlayStyle: SystemUiOverlayStyle.light,
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => sl<SplashBloc>()..add(const SplashStarted()),
         ),
-      ),
-      home: BlocProvider(
-        create: (_) => sl<SplashBloc>()..add(const SplashStarted()),
-        child: const SplashView(),
+        BlocProvider(create: (_) => sl<WeatherBloc>()),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          useMaterial3: true,
+          brightness: Brightness.dark,
+          scaffoldBackgroundColor:
+              const Color(0xFF0A0E21), // AppColors.deepNavy
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            systemOverlayStyle: SystemUiOverlayStyle.light,
+          ),
+        ),
+        home: const SplashView(),
       ),
     );
   }

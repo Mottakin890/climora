@@ -1,0 +1,133 @@
+name: iOS Build & Release
+on:
+  push:
+    branches:
+      - develop
+      - staging
+      - production
+      - main
+      - master
+
+jobs:
+  ios:
+    runs-on: macos-latest
+    env:
+      FLUTTER_VERSION: 'stable'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Determine environment
+        id: env
+        run: |
+          BRANCH=$(echo ${GITHUB_REF#refs/heads/})
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+          if [ "$BRANCH" = "develop" ]; then
+            echo "ENV=dev" >> $GITHUB_OUTPUT
+          elif [ "$BRANCH" = "staging" ]; then
+            echo "ENV=staging" >> $GITHUB_OUTPUT
+          elif [[ "$BRANCH" == "production" || "$BRANCH" == "main" || "$BRANCH" == "master" ]]; then
+            echo "ENV=production" >> $GITHUB_OUTPUT
+          else
+            echo "ENV=dev" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate config (dev)
+        if: steps.env.outputs.ENV == 'dev'
+        run: ./scripts/generate_config.sh dev "https://dev.api.example.com" "dev_dummy_key"
+
+      - name: Generate config (staging/production)
+        if: steps.env.outputs.ENV != 'dev'
+        run: |
+          if [ "${{ steps.env.outputs.ENV }}" = "staging" ]; then
+            ./scripts/generate_config.sh staging \
+              "${{ secrets.STAGING_BASE_URL }}" \
+              "${{ secrets.STAGING_API_KEY }}"
+          else
+            ./scripts/generate_config.sh production \
+              "${{ secrets.PROD_BASE_URL }}" \
+              "${{ secrets.PROD_API_KEY }}"
+          fi
+
+      - name: Install Fastlane
+        run: |
+          cd ios
+          gem install bundler
+          bundle install
+
+      - name: Import signing certificate
+        if: steps.env.outputs.ENV != 'dev'
+        run: |
+          echo "${{ secrets.IOS_CERTIFICATE_BASE64 }}" | base64 --decode > ios/cert.p12
+          security create-keychain -p "" build.keychain
+          security import ios/cert.p12 -k build.keychain -P "${{ secrets.IOS_CERTIFICATE_PASSWORD }}" -T /usr/bin/codesign
+          security list-keychains -s build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "" build.keychain
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+
+      - name: Install provisioning profile
+        if: steps.env.outputs.ENV != 'dev'
+        run: |
+          echo "${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}" | base64 --decode > profile.mobileprovision
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+
+      - name: Build iOS (dev)
+        if: steps.env.outputs.ENV == 'dev'
+        run: flutter build ios --release --no-codesign
+
+      - name: Build & distribute to TestFlight (staging)
+        if: steps.env.outputs.ENV == 'staging'
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+        run: |
+          cd ios
+          bundle exec fastlane beta
+
+      - name: Build & release to App Store (production)
+        if: steps.env.outputs.ENV == 'production'
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+        run: |
+          cd ios
+          bundle exec fastlane release
+
+      - name: Upload Sentry symbols (production only)
+        if: steps.env.outputs.ENV == 'production'
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+        run: ./scripts/upload_symbols.sh $(git rev-parse --short HEAD)
+
+      - name: Notify Team (Success)
+        if: success()
+        run: |
+          echo "iOS Build & Release PASSED"
+          echo "Environment: ${{ steps.env.outputs.ENV }}"
+          echo "Branch: ${{ steps.env.outputs.branch }}"
+          echo "By: @${{ github.actor }}"
+          echo "Commit: ${{ github.sha }}"
+
+      - name: Notify Team (Failure)
+        if: failure()
+        run: |
+          echo "iOS Build & Release FAILED"
+          echo "Environment: ${{ steps.env.outputs.ENV }}"
+          echo "Branch: ${{ steps.env.outputs.branch }}"
+          echo "By: @${{ github.actor }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Check the logs and fix the issue before retrying 🔧"

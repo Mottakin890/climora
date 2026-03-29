@@ -26,9 +26,9 @@ void main(List<String> args) async {
 }
 
 Future<void> _setDeployment(Deployment deployment) async {
-  print("SetDeployment: Loading .env...");
+  developer.log("SetDeployment: Loading .env...", name: 'Main');
   await dotenv.load(fileName: ".env");
-  print("SetDeployment: .env loaded.");
+  developer.log("SetDeployment: .env loaded.", name: 'Main');
   try {
     ApiEndpoints.baseUrl = (deployment == Deployment.production)
         ? dotenv.env['PRODUCTION_BASE_URL']!
@@ -37,15 +37,14 @@ Future<void> _setDeployment(Deployment deployment) async {
     ApiEndpoints.apiKey = (deployment == Deployment.production)
         ? dotenv.env['PRODUCTION_API_KEY']!
         : dotenv.env['STAGING_API_KEY']!;
-    print("SetDeployment: ApiEndpoints configured for Production.");
+    developer.log("SetDeployment: ApiEndpoints configured for Production.", name: 'Main');
   } catch (e) {
-    print("SetDeployment Error while accessing .env: $e");
-    developer.log(e.toString());
+    developer.log("SetDeployment Error while accessing .env: $e", name: 'Main', error: e);
   }
 }
 
 Future<void> _init() async {
-  print("Init: Starting...");
+  developer.log("Init: Starting...", name: 'Main');
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
@@ -56,9 +55,9 @@ Future<void> _init() async {
     systemNavigationBarContrastEnforced: false,
   ));
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  print("Init: Setting deployment...");
+  developer.log("Init: Setting deployment...", name: 'Main');
   await _setDeployment(Deployment.production);
-  print("Init: Initializing Dependency Injection...");
+  developer.log("Init: Initializing Dependency Injection...", name: 'Main');
   await di.init();
-  print("Init: Finished.");
+  developer.log("Init: Finished.", name: 'Main');
 }

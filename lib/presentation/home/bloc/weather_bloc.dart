@@ -17,6 +17,9 @@ final class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
            : const WeatherInitial()) {
     on<WeatherFetchRequested>(_onFetchRequested);
     on<WeatherRefreshRequested>(_onRefreshRequested);
+    on<WeatherInitialSet>((event, emit) {
+      emit(WeatherLoaded(weather: event.weather));
+    });
   }
 
   Future<void> _onFetchRequested(

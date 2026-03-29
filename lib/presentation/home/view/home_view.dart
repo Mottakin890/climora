@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'package:climora/common/constants/app_colors.dart';
 import 'package:climora/presentation/home/bloc/weather_bloc.dart';
 import 'package:climora/presentation/home/widgets/weather_background.dart';
@@ -13,7 +14,7 @@ class HomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print("HomeView: Building. Initial state should be WeatherLoaded.");
+    dev.log("HomeView: Building. Initial state should be WeatherLoaded.", name: 'HomeView');
     return Scaffold(
       extendBodyBehindAppBar: true,
       body: Stack(
