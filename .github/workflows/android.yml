@@ -84,35 +84,24 @@ jobs:
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
-      # Production builds are obfuscated + split debug info for Play Store
+      # We build APKs for all environments since we're not publishing to the Play Store
       - name: Build artifact
         run: |
           if [ "${{ steps.env.outputs.ENV }}" = "production" ]; then
-            flutter build appbundle --release \
+            flutter build apk --release \
               --obfuscate \
               --split-debug-info=build/symbols
           else
-            flutter build appbundle --release
+            flutter build apk --release
           fi
 
-      # Dev and staging go to GitHub Artifacts for internal testing
-      - name: Upload Artifacts (dev/staging)
-        if: steps.env.outputs.ENV == 'dev' || steps.env.outputs.ENV == 'staging'
+      # All builds go to GitHub Artifacts for manual installation/distribution
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.env.outputs.ENV }}-build
-          path: build/app/outputs/bundle/release/app-release.aab
+          name: climora-${{ steps.env.outputs.ENV }}-build
+          path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 7
-
-      # Only production goes to the Play Store
-      - name: Upload to Play Store
-        if: steps.env.outputs.ENV == 'production'
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: com.mottakin.climora.climora
-          releaseFiles: build/app/outputs/bundle/release/app-release.aab
-          track: production
 
       - name: Notify Team (Success)
         if: success()

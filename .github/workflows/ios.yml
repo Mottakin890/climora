@@ -81,37 +81,25 @@ jobs:
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
 
-      - name: Build iOS (dev)
-        if: steps.env.outputs.ENV == 'dev'
-        run: flutter build ios --release --no-codesign
-
-      - name: Build & distribute to TestFlight (staging)
-        if: steps.env.outputs.ENV == 'staging'
-        env:
-          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
-          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+      - name: Build iOS Build
         run: |
-          cd ios
-          bundle exec fastlane beta
+          if [ "${{ steps.env.outputs.ENV }}" = "dev" ]; then
+            flutter build ios --release --no-codesign
+          else
+            flutter build ipa --release \
+              --obfuscate \
+              --split-debug-info=build/symbols
+          fi
 
-      - name: Build & release to App Store (production)
-        if: steps.env.outputs.ENV == 'production'
-        env:
-          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
-          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
-        run: |
-          cd ios
-          bundle exec fastlane release
-
-      - name: Upload Sentry symbols (production only)
-        if: steps.env.outputs.ENV == 'production'
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-        run: ./scripts/upload_symbols.sh $(git rev-parse --short HEAD)
+      # All builds go to GitHub Artifacts
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: climora-${{ steps.env.outputs.ENV }}-ios
+          path: |
+            build/ios/ipa/*.ipa
+            build/ios/iphoneos/*.app
+          retention-days: 7
 
       - name: Notify Team (Success)
         if: success()
