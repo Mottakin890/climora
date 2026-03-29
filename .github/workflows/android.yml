@@ -12,7 +12,7 @@ jobs:
   android:
     runs-on: ubuntu-latest
     env:
-      FLUTTER_VERSION: 'stable'
+      FLUTTER_VERSION: '3.41.6'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
