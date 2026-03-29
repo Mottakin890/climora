@@ -66,5 +66,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Climora needs access to your location to provide accurate local weather data.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Climora needs access to your location to provide accurate local weather data even when the app is in the background.</string>
 </dict>
 </plist>

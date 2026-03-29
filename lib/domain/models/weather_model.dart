@@ -7,11 +7,21 @@ class WeatherModel {
   final CurrentWeatherModel current;
   final ForecastModel forecast;
 
-  WeatherModel({
+  const WeatherModel({
     required this.location,
     required this.current,
     required this.forecast,
   });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is WeatherModel &&
+          runtimeType == other.runtimeType &&
+          location == other.location &&
+          current == other.current &&
+          forecast == other.forecast;
+
+  @override
+  int get hashCode => location.hashCode ^ current.hashCode ^ forecast.hashCode;
 }
-
-

@@ -42,7 +42,7 @@ class HourModel {
   final double dni;
   final double gti;
 
-  HourModel({
+  const HourModel({
     required this.timeEpoch,
     required this.time,
     required this.tempC,
@@ -83,5 +83,88 @@ class HourModel {
     required this.gti,
   });
 
-  
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HourModel &&
+          runtimeType == other.runtimeType &&
+          timeEpoch == other.timeEpoch &&
+          time == other.time &&
+          tempC == other.tempC &&
+          tempF == other.tempF &&
+          isDay == other.isDay &&
+          condition == other.condition &&
+          windMph == other.windMph &&
+          windKph == other.windKph &&
+          windDegree == other.windDegree &&
+          windDir == other.windDir &&
+          pressureMb == other.pressureMb &&
+          pressureIn == other.pressureIn &&
+          precipMm == other.precipMm &&
+          precipIn == other.precipIn &&
+          snowCm == other.snowCm &&
+          humidity == other.humidity &&
+          cloud == other.cloud &&
+          feelslikeC == other.feelslikeC &&
+          feelslikeF == other.feelslikeF &&
+          windchillC == other.windchillC &&
+          windchillF == other.windchillF &&
+          heatindexC == other.heatindexC &&
+          heatindexF == other.heatindexF &&
+          dewpointC == other.dewpointC &&
+          dewpointF == other.dewpointF &&
+          willItRain == other.willItRain &&
+          chanceOfRain == other.chanceOfRain &&
+          willItSnow == other.willItSnow &&
+          chanceOfSnow == other.chanceOfSnow &&
+          visKm == other.visKm &&
+          visMiles == other.visMiles &&
+          gustMph == other.gustMph &&
+          gustKph == other.gustKph &&
+          uv == other.uv &&
+          shortRad == other.shortRad &&
+          diffRad == other.diffRad &&
+          dni == other.dni &&
+          gti == other.gti;
+
+  @override
+  int get hashCode =>
+      timeEpoch.hashCode ^
+      time.hashCode ^
+      tempC.hashCode ^
+      tempF.hashCode ^
+      isDay.hashCode ^
+      condition.hashCode ^
+      windMph.hashCode ^
+      windKph.hashCode ^
+      windDegree.hashCode ^
+      windDir.hashCode ^
+      pressureMb.hashCode ^
+      pressureIn.hashCode ^
+      precipMm.hashCode ^
+      precipIn.hashCode ^
+      snowCm.hashCode ^
+      humidity.hashCode ^
+      cloud.hashCode ^
+      feelslikeC.hashCode ^
+      feelslikeF.hashCode ^
+      windchillC.hashCode ^
+      windchillF.hashCode ^
+      heatindexC.hashCode ^
+      heatindexF.hashCode ^
+      dewpointC.hashCode ^
+      dewpointF.hashCode ^
+      willItRain.hashCode ^
+      chanceOfRain.hashCode ^
+      willItSnow.hashCode ^
+      chanceOfSnow.hashCode ^
+      visKm.hashCode ^
+      visMiles.hashCode ^
+      gustMph.hashCode ^
+      gustKph.hashCode ^
+      uv.hashCode ^
+      shortRad.hashCode ^
+      diffRad.hashCode ^
+      dni.hashCode ^
+      gti.hashCode;
 }
